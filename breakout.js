@@ -289,7 +289,7 @@ class Breakout {
         // A1  A2  A3        (B2 starts centered on the canvas)
         // B1  B2  B3
 
-        //Only one of the outer columns is drawn on the canvas at a time.
+        //Only one of the outer columns is drawn at a time.
 
         // ************* Vertical scrolling *****************
         ctx.drawImage(this.BG_IMG, this.bgX, this.bgY, canvas.width, canvas.height); // draw B2 
