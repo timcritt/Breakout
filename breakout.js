@@ -134,7 +134,6 @@ class Wall {
                     && ball.y - ball.radius < b.y + this.brickHeight) {
                         b.broken = true;
                         ball.dy = -ball.dy;
-                        //paddle.lastHit = false;
                         this.numBricks--; 
                         gameStats.score++;
                         this.brickBreak.pause();
@@ -188,6 +187,7 @@ class Paddle {
         var style = p.currentStyle || window.getComputedStyle(p);
         //remove the "px" from the returned style properties
         var offset = parseInt(style.marginLeft, 10);
+        console.log(offset);
         //get the mouse position in the dom
         document.onmousemove = (e) =>  {
             var mousecoords = getMousePos(e);
@@ -235,8 +235,6 @@ class Breakout {
         this.gameStats = new GameStats(3,1,0);
         this.levelComplete = false;
         //background Image
-        this.BG_IMG_7 = new Image();
-        this.BG_IMG_7.src = "img/BG_IMG_7.jpg"
         this.BG_IMG = new Image();
         this.BG_IMG.src ="img/BG_IMG.jpg";
         this.scrollSpeed = 1;
@@ -261,7 +259,6 @@ class Breakout {
         this.gameStats.levelUp.muted = !this.gameStats.levelUp.muted; 
         this.wall.brickBreak.muted = !this.wall.brickBreak.muted;
         this.gameStats.gameOverSound.muted = !this.gameStats.gameOverSound.muted;
-
     }
     togglePause() {
         game.gameStats.paused = !game.gameStats.paused;
@@ -299,8 +296,7 @@ class Breakout {
         if (this.bgY == canvas.height) {
                 this.bgY = 0;
         }
-        // *************** Horziontal scrolling **************
-        // **** scroll left to right ****
+        // **** when scrolling right to left ****
         if (this.bgX < 0) { 
             ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY - canvas.height, canvas.width, canvas.height); // draw A3
             ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY, canvas.width, canvas.height);  //draw B3
@@ -308,12 +304,10 @@ class Breakout {
             if (this.bgX == -canvas.width) {
                 this.bgX = 0;
             }
-        // **** scroll right to left ****
+        // **** when scrolling left to right ****
         } else  {
-            //A1
-            ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY-canvas.height, canvas.width, canvas.height);
-            //B1
-            ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY, canvas.width, canvas.height);
+            ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY-canvas.height, canvas.width, canvas.height); // draw A1
+            ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY, canvas.width, canvas.height); // draw B1
             //reset x coordinate
             if (this.bgX == canvas.width) {
                 this.bgX = 0;
@@ -321,9 +315,9 @@ class Breakout {
         }  
     }
     moveBackground = () => {
-        if((this.paddle.x + this.paddle.width/2 < canvas.width/2) ) {
+        if((this.paddle.x + this.paddle.width*1.5 < canvas.width/2) ) {
             this.bgX = this.bgX + this.sideScrollSpeed;
-        }else if ((this.paddle.x + this.paddle.width/2 > canvas.width/2)) {
+        }else if ((this.paddle.x  > canvas.width/2 + this.paddle.width*1.5)) {
              this.bgX = this.bgX - this.sideScrollSpeed;
         }
     }
@@ -385,7 +379,7 @@ function getMousePos(e) {
     return {x:e.clientX,y:e.clientY};
 }
 
-//********************SETUP THE GAME ****************************
+//********************SET UP THE GAME ****************************
 //setup the canvas and the context
 document.body.style.backgroundColor = "#0f172e";
 const canvas = document.getElementById('myCanvas');

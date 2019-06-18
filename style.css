@@ -1,9 +1,6 @@
-* {padding: 0;
-    margin: 20;
- }
-
 canvas {
     display: block;
     margin: 0 auto; 
+    margin-top: 40;
     margin-left: auto; 
 }
