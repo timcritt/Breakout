@@ -159,7 +159,7 @@ class Paddle {
     constructor() {
         this.height = 10;
         this.width = 70;
-        this.x;
+        this.x = (canvas.width/2) - this.width/2;
         this.x1;
         this.x2;
         this.dx;
@@ -282,41 +282,48 @@ class Breakout {
         this.gameStats.levelUp.play();
     }
     scrollBackground = () => {
-        //background
-             // draw image 1
-             ctx.drawImage(this.BG_IMG, this.bgX, this.bgY, canvas.width, canvas.height); 
-             // draw image 2 
-             ctx.drawImage(this.BG_IMG, this.bgX, this.bgY - canvas.height, canvas.width, canvas.height); 
-            // update image height 
-            this.bgY += this.scrollSpeed; 
-            // reseting the images when the first image entirely exits the screen 
-            if (this.bgY == canvas.height) {
+        //background tiled images arranged in rows and columns as shown below
+        //the left column is drawn only when the center column exits by the right edge of the canvas
+        //the right column is drawn only when the center column exits by the left edge of the canvas
+
+        // A1  A2  A3        (B2 starts centered on the canvas)
+        // B1  B2  B3
+
+        //Only one of the outer columns is drawn at a time.
+
+        // ************* Vertical scrolling *****************
+        ctx.drawImage(this.BG_IMG, this.bgX, this.bgY, canvas.width, canvas.height); // draw B2 
+        ctx.drawImage(this.BG_IMG, this.bgX, this.bgY - canvas.height, canvas.width, canvas.height); // draw A2 
+        this.bgY += this.scrollSpeed; 
+        // reset coordinates
+        if (this.bgY == canvas.height) {
                 this.bgY = 0;
+        }
+        // *************** Horziontal scrolling **************
+        // **** scroll left to right ****
+        if (this.bgX < 0) { 
+            ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY - canvas.height, canvas.width, canvas.height); // draw A3
+            ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY, canvas.width, canvas.height);  //draw B3
+            //reset x coordinate
+            if (this.bgX == -canvas.width) {
+                this.bgX = 0;
             }
-            //****side to side****/
-            //infinite side scroll when moving right
-            if (this.bgX < 0) {
-                ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY, canvas.width, canvas.height);
-                ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY - canvas.height, canvas.width, canvas.height);
-                if (this.bgX + canvas.width == 0) {
-                    this.bgX = 0;
-                }
-            } else {
-                  //infinite side scrol when moving left
-                
-                    ctx.drawImage(this.BG_IMG, this.bgX, this.bgY, canvas.width, canvas.height);
-                    ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY, canvas.width, canvas.height);
-                
-                //reset image x coordinate
-                if (this.bgX == 0) {
-                    this.bgX = -canvas.width;
-                }
-            }  
+        // **** scroll right to left ****
+        } else  {
+            //A1
+            ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY-canvas.height, canvas.width, canvas.height);
+            //B1
+            ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY, canvas.width, canvas.height);
+            //reset x coordinate
+            if (this.bgX == canvas.width) {
+                this.bgX = 0;
+            }
+        }  
     }
     moveBackground = () => {
-        if((this.paddle.x + this.paddle.width/2 < canvas.width/2) /*&& (this.bgX < 0)*/) {
+        if((this.paddle.x + this.paddle.width/2 < canvas.width/2) ) {
             this.bgX = this.bgX + this.sideScrollSpeed;
-        }else if ((this.paddle.x + this.paddle.x/2 > canvas.width/2) /*&& (this.bgX > -100)*/) {
+        }else if ((this.paddle.x + this.paddle.width/2 > canvas.width/2)) {
              this.bgX = this.bgX - this.sideScrollSpeed;
         }
     }
