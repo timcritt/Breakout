@@ -188,6 +188,7 @@ class Paddle {
         var style = p.currentStyle || window.getComputedStyle(p);
         //remove the "px" from the returned style properties
         var offset = parseInt(style.marginLeft, 10);
+        console.log(offset);
         //get the mouse position in the dom
         document.onmousemove = (e) =>  {
             var mousecoords = getMousePos(e);
@@ -235,8 +236,6 @@ class Breakout {
         this.gameStats = new GameStats(3,1,0);
         this.levelComplete = false;
         //background Image
-        this.BG_IMG_7 = new Image();
-        this.BG_IMG_7.src = "img/BG_IMG_7.jpg"
         this.BG_IMG = new Image();
         this.BG_IMG.src ="img/BG_IMG.jpg";
         this.scrollSpeed = 1;
@@ -261,7 +260,6 @@ class Breakout {
         this.gameStats.levelUp.muted = !this.gameStats.levelUp.muted; 
         this.wall.brickBreak.muted = !this.wall.brickBreak.muted;
         this.gameStats.gameOverSound.muted = !this.gameStats.gameOverSound.muted;
-
     }
     togglePause() {
         game.gameStats.paused = !game.gameStats.paused;
@@ -321,9 +319,9 @@ class Breakout {
         }  
     }
     moveBackground = () => {
-        if((this.paddle.x + this.paddle.width/2 < canvas.width/2) ) {
+        if((this.paddle.x + this.paddle.width*1.5 < canvas.width/2) ) {
             this.bgX = this.bgX + this.sideScrollSpeed;
-        }else if ((this.paddle.x + this.paddle.width/2 > canvas.width/2)) {
+        }else if ((this.paddle.x  > canvas.width/2 + this.paddle.width*1.5)) {
              this.bgX = this.bgX - this.sideScrollSpeed;
         }
     }
@@ -385,7 +383,7 @@ function getMousePos(e) {
     return {x:e.clientX,y:e.clientY};
 }
 
-//********************SETUP THE GAME ****************************
+//********************SET UP THE GAME ****************************
 //setup the canvas and the context
 document.body.style.backgroundColor = "#0f172e";
 const canvas = document.getElementById('myCanvas');
