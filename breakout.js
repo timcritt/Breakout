@@ -19,12 +19,6 @@ class Ball {
         this.x += this.dx;
         this.y += this.dy;
     }
-    resetBall(){
-        this.x = canvas.width/2;
-        this.y = canvas.height - 50;
-        this.dx = 3;
-        this.dy = -4;
-    }
     detectWallCollision = (canvas, gameStats) => {
         //detect collision with top wall
         if ((this.x + this.dx > canvas.width - this.radius) || (this.x + this.dx < this.radius)) {
@@ -66,6 +60,7 @@ class Ball {
         }
     }
 }
+
 class Wall {
     constructor(rows, columns) {
         //wall properties
@@ -187,7 +182,6 @@ class Paddle {
         var style = p.currentStyle || window.getComputedStyle(p);
         //remove the "px" from the returned style properties
         var offset = parseInt(style.marginLeft, 10);
-        console.log(offset);
         //get the mouse position in the dom
         document.onmousemove = (e) =>  {
             var mousecoords = getMousePos(e);
@@ -205,11 +199,14 @@ class Paddle {
 }
 class GameStats {
     constructor(lives, level, score) {
+        this.newGame = true;
         this.score = score;
         this.lives = lives;
         this.level = level;
         this.gameOver = false;
         this.paused = false;
+        this.playing = false;
+        this.serving = true;
         this.SCORE_IMG = new Image();
         this.SCORE_IMG.src = "img/score.png";
         this.LIFE_IMG = new Image();
@@ -222,9 +219,10 @@ class GameStats {
     }
     showStats = (text, imgY, x, y) => {
         ctx.fillStyle = "#FFF",
-        ctx.font = "20px Germania One",
+        ctx.font = "15px Orbitron",
+        ctx.textAlign = "left"
         ctx.fillText(text, x, y);
-        ctx.drawImage(imgY, x-34, y-20, 25, 25);
+        ctx.drawImage(imgY, x-30, y-20, 25, 25);
     }
 }
 class Breakout {
@@ -243,6 +241,13 @@ class Breakout {
         this.bgY = 0;
     }
     startGame = () => {
+        this.wall.rows = 2;
+        this.gameStats.lives = 1;
+        this.gameStats.level = 1;
+        this.wall.numBricks = 0;
+        this.gameStats.score = 0;
+        this.levelComplete = false;
+        this.gameStats.gameOver = false;
         this.wall.buildWall(this.wall.bricks);
         requestAnimationFrame(this.gameLoop);
     }
@@ -265,18 +270,29 @@ class Breakout {
     }
     resetGame() {
         this.gameStats.paused = true;
-        this.ball.resetBall();
+        this.resetBall();
+        this.wall.numBricks = 0;
+        this.wall.rows = 2;
         this.wall.buildWall(this.wall.bricks);
+        this.gameStats.lives = 1;
+        this.gameStats.level = 1;
+        this.gameStats.score = 0;
         this.gameStats.gameOver = false;
-        this.gameStats.paused = false;
+        this.gameStats.paused =false;
+        this.gameStats.serving = true;
+        this.ball.touchedBottom = false;
     }
     createNewLevel() {
-        this.gameStats.paused = true;
+        this.resetBall();
+        //this.gameStats.paused = true;
         this.gameStats.level++;
         this.wall.rows++;
-        this.resetGame();
-        this.gameStats.levelComplete = false;
+        this.wall.buildWall(this.wall.bricks);
         this.gameStats.levelUp.play();
+        this.gameStats.playing = false;
+        this.gameStats.serving = true;
+        this.gameStats.levelComplete = false;
+        //this.gameStats.paused = false;
     }
     scrollBackground = () => {
         //background tiled images arranged in rows and columns as shown below
@@ -321,47 +337,143 @@ class Breakout {
              this.bgX = this.bgX - this.sideScrollSpeed;
         }
     }
+    handleClick() {
+
+        //restart after game over
+        if (this.gameStats.gameOver) {
+            this.gameStats.gameOver = false;
+            this.gameStats.serving = true;
+            this.resetGame();
+        //start game after first load
+        } else if (this.gameStats.newGame == true) {
+            this.gameStats.newGame = false;
+            this.gameStats.serving = true;
+            this.gameStats.levelComplete = false;
+        //serve the ball            
+        } else if (this.gameStats.serving) {
+            this.serveBall();
+            this.gameStats.serving = false;
+        }
+    }
+    resetBall() {
+        this.ball.x = this.paddle.x + this.paddle.width/2;
+        this.ball.y = canvas.height -45;
+        this.ball.dx = 0;
+        this.ball.dy = 0;
+        this.gameStats.serving = true;
+        //this.ball.touchedBottom = false;
+       // alert("ball reset");
+    }
+    serveBall() {
+        this.ball.dy = -4;
+        this.gameStats.serving = false;
+        this.gameStats.playing = true;
+        
+        if (this.paddle.speed/2 >= this.ball.maxDx){
+            this.ball.dx = this.ball.maxDx;
+        } else if (this.paddle.speed/2 <= -this.ball.maxDx) {
+            this.ball.dx = -this.ball.maxDx
+        } else {
+            this.ball.dx = this.paddle.speed;
+        }
+    }
     gameLoop = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        this.scrollBackground();
-        this.gameStats.showStats(this.gameStats.lives, this.gameStats.LIFE_IMG, 40, 25);
-        this.gameStats.showStats(this.gameStats.level, this.gameStats.LEVEL_IMG, canvas.width/2 + 12.5, 25 );
-        this.gameStats.showStats(this.gameStats.score, this.gameStats.SCORE_IMG, canvas.width-40, 25 );
-        this.ball.drawBall(ctx);
-        this.wall.drawWall();
-        this.checkGameStatus();
-        this.paddle.drawPaddle();
-        this.paddle.getPaddleSpeed();
-        this.moveBackground();
         
-        if (!this.gameStats.paused) {
-            
-            this.ball.moveBall();
-            this.paddle.movePaddle();
-            this.ball.detectWallCollision(canvas, this.gameStats);
-            this.ball.detectPaddleCollision(this.paddle);
-            this.wall.brickCollision(this.ball, this.gameStats); 
-            
-            if(this.ball.touchedBottom) {
-                this.ball.resetBall();
-                this.ball.touchedBottom = false;
-            }
-    
+        //controls the game for when the ball is loose
+
+        if (this.gameStats.playing) {
+
             if (this.gameStats.gameOver) {
-                this.wall.rows = 2;
-                this.gameStats.lives = 3;
-                this.gameStats.level = 1;
-                this.wall.numBricks = 0;
-                this.gameStats.score = 0;
                 this.gameStats.gameOverSound.pause();
                 this.gameStats.gameOverSound.currentTime = 0;
                 this.gameStats.gameOverSound.play();
-                this.resetGame();  
+                this.gameStats.playing = false;
             }
-            if (this.gameStats.levelComplete){
-                this.createNewLevel();
+
+            if (!this.gameStats.paused) {
+                this.scrollBackground();
+                this.moveBackground();
+                this.ball.moveBall();
+                this.paddle.movePaddle();
+                this.ball.detectWallCollision(canvas, this.gameStats);
+                this.ball.detectPaddleCollision(this.paddle);
+                this.wall.brickCollision(this.ball, this.gameStats); 
+                this.gameStats.showStats(this.gameStats.lives, this.gameStats.LIFE_IMG, 40, 25);
+                this.gameStats.showStats(this.gameStats.level, this.gameStats.LEVEL_IMG, canvas.width/2 + 12.5, 25 );
+                this.gameStats.showStats(this.gameStats.score, this.gameStats.SCORE_IMG, canvas.width-40, 25 );
+                this.ball.drawBall(ctx);
+                this.wall.drawWall();
+                this.paddle.drawPaddle();
+                this.paddle.getPaddleSpeed();
+                this.checkGameStatus();
+                
+                //reset ball if ball touched bottom of screen
+                if(this.ball.touchedBottom) {
+                    this.gameStats.playing = false;
+                }
+                
+                if (this.gameStats.levelComplete){
+                    this.createNewLevel();
+                }
+            } else {
+                     
+                ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY - canvas.height, canvas.width, canvas.height); // draw A3
+                ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY, canvas.width, canvas.height);  //draw B3
+                ctx.drawImage(this.BG_IMG, this.bgX, this.bgY, canvas.width, canvas.height); // draw B2 
+                ctx.drawImage(this.BG_IMG, this.bgX, this.bgY - canvas.height, canvas.width, canvas.height); // draw A2
+                ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY-canvas.height, canvas.width, canvas.height); // draw A1
+                ctx.drawImage(this.BG_IMG, this.bgX - canvas.width, this.bgY, canvas.width, canvas.height); // draw B1
+                this.gameStats.showStats(this.gameStats.lives, this.gameStats.LIFE_IMG, 40, 25);
+                this.gameStats.showStats(this.gameStats.level, this.gameStats.LEVEL_IMG, canvas.width/2 + 12.5, 25 );
+                this.gameStats.showStats(this.gameStats.score, this.gameStats.SCORE_IMG, canvas.width-40, 25 );
+                ctx.font = "30px Orbitron";
+                ctx.textAlign = "center";
+                ctx.fillText("PAUSED", canvas.width/2, canvas.height/2);
+                this.wall.drawWall();
+            } 
+        } 
+
+        //ball is not in play
+        if (this.gameStats.playing == false) {
+            this.scrollBackground();
+            this.moveBackground();
+            this.gameStats.showStats(this.gameStats.lives, this.gameStats.LIFE_IMG, 40, 25);
+            this.gameStats.showStats(this.gameStats.level, this.gameStats.LEVEL_IMG, canvas.width/2 + 12.5, 25 );
+            this.gameStats.showStats(this.gameStats.score, this.gameStats.SCORE_IMG, canvas.width-40, 25 );
+            ctx.font = "30px Orbitron";
+            ctx.textAlign = "center";
+
+            //all lives are lost
+            if(this.gameStats.gameOver) {
+                ctx.fillStyle = "white";
+                ctx.fillText("game over", canvas.width/2, canvas.height/2-50);
+                ctx.fillStyle = "white";
+                ctx.fillText("click to play again", canvas.width/2, canvas.height/2);
+                this.paddle.drawPaddle();
+
+            //ball has touched bottom 
+            } else if (this.gameStats.serving && !this.gameStats.newGame) {
+                ctx.fillStyle = "white";
+                ctx.fillText("click to serve", canvas.width/2, canvas.height/2);
+                this.resetBall();
+                this.ball.drawBall();
+                this.paddle.drawPaddle();
+                console.log("ball")
+    
+            //first load of game   
+            } else if (this.gameStats.newGame) {
+                 ctx.fillStyle = "white";
+                 ctx.fillText("click to play", canvas.width/2, canvas.height/2);
+                 this.resetBall();
+                 //this.ball.drawBall();
+                 this.paddle.movePaddle();
+                 this.paddle.drawPaddle();
             }
+            this.wall.drawWall();
         }
+        this.paddle.getPaddleSpeed();
+        
         //recursive call at the end of every frame
         requestAnimationFrame(this.gameLoop);
     }    
@@ -395,5 +507,10 @@ window.addEventListener('keydown', event => {
     } else if (event.keyCode == 77) {
         game.toggleMute();
     }
+});
+
+window.addEventListener('click', event => {
+
+    game.handleClick();
 });
 
