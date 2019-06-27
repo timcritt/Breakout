@@ -3,9 +3,10 @@ class Ball {
         this.x = x;
         this.y = y;
         this.radius = radius;
-        this.dx = 4;
-        this.dy = -4;
+        this.maxDy = -6;
         this.maxDx = 4;
+        this.dx = 4;
+        this.dy = this.maxDy;
         this.touchedBottom = false;
     }
     drawBall = () => {
@@ -36,6 +37,7 @@ class Ball {
             gameStats.loseLife.pause()
             gameStats.loseLife.currentTime = 0;
             gameStats.loseLife.play();
+            gameStats.serving = true;
         }
     }
     detectPaddleCollision = (paddle) => {
@@ -44,12 +46,9 @@ class Ball {
             (this.x + this.dx > paddle.x) &&
             (this.x + this.dx < paddle.x + paddle.width)
             ) {
-            //paddle.lastHit = true;
-            //calculateCombo()
             //reverses direction
             this.dy = -this.dy;
             ///receives impulse from moving paddle
-
             if (this.dx + paddle.speed/2 >= this.maxDx) {
                 this.dx = this.maxDx;
             } else if (this.dx + paddle.speed/2 <= - this.maxDx) {
@@ -203,10 +202,12 @@ class GameStats {
         this.score = score;
         this.lives = lives;
         this.level = level;
+        //***gameloop controls ***
         this.gameOver = false;
         this.paused = false;
         this.playing = false;
         this.serving = true;
+        //*****
         this.SCORE_IMG = new Image();
         this.SCORE_IMG.src = "img/score.png";
         this.LIFE_IMG = new Image();
@@ -242,7 +243,6 @@ class Breakout {
     }
     startGame = () => {
         this.wall.rows = 2;
-        this.gameStats.lives = 1;
         this.gameStats.level = 1;
         this.wall.numBricks = 0;
         this.gameStats.score = 0;
@@ -274,7 +274,7 @@ class Breakout {
         this.wall.numBricks = 0;
         this.wall.rows = 2;
         this.wall.buildWall(this.wall.bricks);
-        this.gameStats.lives = 1;
+        this.gameStats.lives = 3;
         this.gameStats.level = 1;
         this.gameStats.score = 0;
         this.gameStats.gameOver = false;
@@ -284,7 +284,6 @@ class Breakout {
     }
     createNewLevel() {
         this.resetBall();
-        //this.gameStats.paused = true;
         this.gameStats.level++;
         this.wall.rows++;
         this.wall.buildWall(this.wall.bricks);
@@ -292,7 +291,6 @@ class Breakout {
         this.gameStats.playing = false;
         this.gameStats.serving = true;
         this.gameStats.levelComplete = false;
-        //this.gameStats.paused = false;
     }
     scrollBackground = () => {
         //background tiled images arranged in rows and columns as shown below
@@ -338,7 +336,6 @@ class Breakout {
         }
     }
     handleClick() {
-
         //restart after game over
         if (this.gameStats.gameOver) {
             this.gameStats.gameOver = false;
@@ -361,11 +358,10 @@ class Breakout {
         this.ball.dx = 0;
         this.ball.dy = 0;
         this.gameStats.serving = true;
-        //this.ball.touchedBottom = false;
-       // alert("ball reset");
+        this.ball.touchedBottom = false;
     }
     serveBall() {
-        this.ball.dy = -4;
+        this.ball.dy = this.ball.maxDy;
         this.gameStats.serving = false;
         this.gameStats.playing = true;
         
@@ -379,18 +375,9 @@ class Breakout {
     }
     gameLoop = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
         //controls the game for when the ball is loose
-
         if (this.gameStats.playing) {
-
-            if (this.gameStats.gameOver) {
-                this.gameStats.gameOverSound.pause();
-                this.gameStats.gameOverSound.currentTime = 0;
-                this.gameStats.gameOverSound.play();
-                this.gameStats.playing = false;
-            }
-
+            
             if (!this.gameStats.paused) {
                 this.scrollBackground();
                 this.moveBackground();
@@ -412,12 +399,11 @@ class Breakout {
                 if(this.ball.touchedBottom) {
                     this.gameStats.playing = false;
                 }
-                
                 if (this.gameStats.levelComplete){
                     this.createNewLevel();
                 }
-            } else {
-                     
+            } else {  
+                //game us paused
                 ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY - canvas.height, canvas.width, canvas.height); // draw A3
                 ctx.drawImage(this.BG_IMG, this.bgX + canvas.width, this.bgY, canvas.width, canvas.height);  //draw B3
                 ctx.drawImage(this.BG_IMG, this.bgX, this.bgY, canvas.width, canvas.height); // draw B2 
@@ -432,46 +418,55 @@ class Breakout {
                 ctx.fillText("PAUSED", canvas.width/2, canvas.height/2);
                 this.wall.drawWall();
             } 
+            if (this.gameStats.gameOver) {
+                this.gameStats.gameOverSound.pause();
+                this.gameStats.gameOverSound.currentTime = 0;
+                this.gameStats.gameOverSound.play();
+                this.gameStats.playing = false;
+            }
         } 
-
-        //ball is not in play
+        //controls the game when ball is not in play
         if (this.gameStats.playing == false) {
             this.scrollBackground();
             this.moveBackground();
-            this.gameStats.showStats(this.gameStats.lives, this.gameStats.LIFE_IMG, 40, 25);
-            this.gameStats.showStats(this.gameStats.level, this.gameStats.LEVEL_IMG, canvas.width/2 + 12.5, 25 );
-            this.gameStats.showStats(this.gameStats.score, this.gameStats.SCORE_IMG, canvas.width-40, 25 );
-            ctx.font = "30px Orbitron";
-            ctx.textAlign = "center";
+            this.paddle.movePaddle();
 
-            //all lives are lost
+            //after a game over
             if(this.gameStats.gameOver) {
+                ctx.font = "30px Orbitron";
+                ctx.textAlign = "center";
                 ctx.fillStyle = "white";
                 ctx.fillText("game over", canvas.width/2, canvas.height/2-50);
                 ctx.fillStyle = "white";
                 ctx.fillText("click to play again", canvas.width/2, canvas.height/2);
-                this.paddle.drawPaddle();
-
-            //ball has touched bottom 
+                this.gameStats.showStats(this.gameStats.lives, this.gameStats.LIFE_IMG, 40, 25);
+                this.gameStats.showStats(this.gameStats.level, this.gameStats.LEVEL_IMG, canvas.width/2 + 12.5, 25 );
+                this.gameStats.showStats(this.gameStats.score, this.gameStats.SCORE_IMG, canvas.width-40, 25 );
+                
+            //after losing a life 
             } else if (this.gameStats.serving && !this.gameStats.newGame) {
+                this.gameStats.showStats(this.gameStats.lives, this.gameStats.LIFE_IMG, 40, 25);
+                this.gameStats.showStats(this.gameStats.level, this.gameStats.LEVEL_IMG, canvas.width/2 + 12.5, 25 );
+                this.gameStats.showStats(this.gameStats.score, this.gameStats.SCORE_IMG, canvas.width-40, 25 );
+                ctx.font = "30px Orbitron";
+                ctx.textAlign = "center";
                 ctx.fillStyle = "white";
                 ctx.fillText("click to serve", canvas.width/2, canvas.height/2);
                 this.resetBall();
                 this.ball.drawBall();
                 this.paddle.drawPaddle();
-                console.log("ball")
+                this.wall.drawWall()
     
-            //first load of game   
+            //serving for new game after window load   
             } else if (this.gameStats.newGame) {
+                 ctx.font = "30px Orbitron";
+                 ctx.textAlign = "center";
                  ctx.fillStyle = "white";
                  ctx.fillText("click to play", canvas.width/2, canvas.height/2);
                  this.resetBall();
-                 //this.ball.drawBall();
-                 this.paddle.movePaddle();
-                 this.paddle.drawPaddle();
-            }
-            this.wall.drawWall();
+            } 
         }
+        //this.wall.drawWall();
         this.paddle.getPaddleSpeed();
         
         //recursive call at the end of every frame
